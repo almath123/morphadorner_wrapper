@@ -7,10 +7,12 @@ class MorphAdorner(object):
         self.noun_inflect_path = os.path.join(path, "NounInflector/NounInflector.jar")
         self.verb_tense_path = os.path.join(path, "VerbTenser/VerbTenser.jar")
         self.verb_conjugate_path = os.path.join(path, "VerbConjugator/VerbConjugator.jar")
+        self.adj_inflect_path = os.path.join(path, "AdjectiveInflector/AdjectiveInflector.jar")
 
         self.noun_inflect_proc = None
         self.verb_tense_proc = None
         self.verb_conjugate_proc = None
+        self.adj_inflect_proc = None
 
     def close(self):
         if self.noun_inflect_proc is not None:
@@ -19,6 +21,8 @@ class MorphAdorner(object):
             self.verb_tense_proc.kill()
         if self.verb_conjugate_proc is not None:
             self.verb_conjugate_proc.kill()
+        if self.adj_inflect_proc is not None:
+            self.adj_inflect_proc.kill()
 
     def inflectNoun(self, lemma, plural=True):
         if self.noun_inflect_proc is None:
@@ -30,6 +34,18 @@ class MorphAdorner(object):
             query = lemma + " " + "singular\n"
         self.noun_inflect_proc.stdin.write(query)
         out = self.noun_inflect_proc.stdout.readline()
+        return out.strip()
+
+    def inflectAdjective(self, lemma, comparative=True):
+        if self.adj_inflect_proc is None:
+            args = ['java', '-jar', self.adj_inflect_path]
+            self.adj_inflect_proc = subprocess.Popen(args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, shell=False)
+        if comparative:
+            query = lemma + " " + "comparative\n"
+        else:
+            query = lemma + " " + "superlative\n"
+        self.adj_inflect_proc.stdin.write(query)
+        out = self.adj_inflect_proc.stdout.readline()
         return out.strip()
 
     def tenseVerb(self, lemma, verb):
@@ -64,5 +80,6 @@ if __name__ == "__main__":
     print ma.inflectNoun("cat")
     print ma.conjugateVerb("charge", "PAST_PARTICIPLE", "THIRD_PERSON_PLURAL")
     print ma.conjugateVerb("levy", "PAST_PARTICIPLE", "THIRD_PERSON_PLURAL")
+    print ma.inflectAdjective("slow", comparative=False)
 
     ma.close()
